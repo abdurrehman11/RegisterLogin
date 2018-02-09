@@ -16,7 +16,9 @@ module.exports = (router) => {
 	// 		api_key: 'PAssword123!@#' // Sendgrid password
 	// 	}
 	// }
-	//var mailer = nodemailer.createTransport(sgTransport(options));
+    
+	var mailer = nodemailer.createTransport(sgTransport(options));
+
 	// End Sendgrid Configuration Settings  
 
     var transporter = nodemailer.createTransport({
