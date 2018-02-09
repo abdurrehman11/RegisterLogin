@@ -1,0 +1,29 @@
+{
+  "name": "meanauth",
+  "version": "1.0.0",
+  "description": "Authentication with Angular2",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "Authentication",
+    "Angular2",
+    "Application"
+  ],
+  "author": "Abdur Rehman",
+  "license": "ISC",
+  "dependencies": {
+    "bcrypt-nodejs": "0.0.3",
+    "body-parser": "^1.18.2",
+    "cors": "^2.8.4",
+    "express": "^4.16.2",
+    "jsonwebtoken": "^8.1.1",
+    "mysql2": "^1.5.1",
+    "node-mailer": "^0.1.1",
+    "nodemailer-sendgrid-transport": "^0.2.0",
+    "sequelize": "^4.32.2",
+    "validator": "^9.4.0"
+  }
+}
