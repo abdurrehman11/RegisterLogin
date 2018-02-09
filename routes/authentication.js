@@ -7,6 +7,60 @@ const secret = require('crypto').randomBytes(256).toString('hex');
 var nodemailer = require('nodemailer');
 var sgTransport = require('nodemailer-sendgrid-transport');
 
+
+var transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+            user: 'leprechaunfyp@gmail.com',
+            pass: 'batch2014'
+        }
+    });
+
+// function test(a, b = '') {
+//     console.log('first = ' + a + ' second = ' + b);
+//     console.log('hey it works!');
+// }
+
+// send email to user 
+function sendEmail(email, username, temporarytoken, linkName) {
+    var emailText;
+    if(linkName === 'activate') {
+        emailText = 'Hello<strong> ' + username + '</strong>,<br><br>Thank you for registering at localhost.com. Please click on the link below to complete your activation:<br><br><a href="http://localhost:4200/' + linkName + '/'+ temporarytoken + '">http://localhost:4200/activate/</a>';
+    } else if(linkName === 'activateUser') {
+        emailText = 'Hello<strong> ' + username + '</strong>,<br><br>Your account has been successfully activated!';
+    } else if(linkName === 'resend') {
+        emailText = 'Hello<strong> ' + username + '</strong>,<br><br>You recently requested a new account activation link. Please click on the link below to complete your activation:<br><br><a href="http://localhost:4200/' + linkName + '/'+ temporarytoken + '">http://localhost:4200/activate/</a>';
+    } else if(linkName === 'resendUsername') {
+        emailText = 'Hello ,<br><br>You recently requested your username. Your username: ' + username;
+    } else if(linkName === 'resetPassword') {
+        emailText = 'Hello<strong> ' + username + '</strong>,<br><br>You recently request a password reset link. Please click on the link below to reset your password:<br><br><a href="http://localhost:4200/' + linkName + '/' + temporarytoken + '">http://localhost:4200/reset/</a>';
+    } else if(linkName === 'savepassword') {
+        emailText = 'Hello<strong> ' + username + '</strong>,<br><br>This e-mail is to notify you that your password was recently reset at localhost.com';
+    }
+
+    //console.log('send email');
+    // Create e-mail object to send to user
+    var email = {
+        from: 'leprechaunfyp@gmail.com',
+        to: email,
+        subject: 'Localhost Username Request',
+        //text: 'Hello, You recently requested your username. Please save it: ' + user.dataValues.username,
+        html: emailText
+    };
+    
+    console.log('in function ');
+
+    // Node function to send email to user
+    transporter.sendMail(email, function(err, info) {
+        if (err) { 
+            console.log('Could not sent email to user: ' + err)    // If error in sending e-mail, log to console/terminal
+        } else {
+            console.log('success' + info);
+            //res.json({ success: true, message: 'Account registered! Please check your e-mail for activation link.' });
+        }
+    });
+}
+
 module.exports = (router) => {
 
     // Start Sendgrid Configuration Settings	
@@ -19,13 +73,13 @@ module.exports = (router) => {
     //var mailer = nodemailer.createTransport(sgTransport(options));
     // End Sendgrid Configuration Settings  
 
-    var transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: {
-            user: 'leprechaunfyp@gmail.com',
-            pass: 'batch2014'
-        }
-    });
+    // var transporter = nodemailer.createTransport({
+    //     service: 'gmail',
+    //     auth: {
+    //         user: 'leprechaunfyp@gmail.com',
+    //         pass: 'batch2014'
+    //     }
+    // });
 
     /* ==============
      Register Route
@@ -75,25 +129,35 @@ module.exports = (router) => {
                                  // save user in database
                                  user.save().then((user) => {
 
-                                     // Create e-mail object to send to user
-                                     var email = {
-                                         from: 'leprechaunfyp@gmail.com',
-                                         to: user.dataValues.email,
-                                         subject: 'Localhost Username Request',
-                                        //text: 'Hello, You recently requested your username. Please save it: ' + user.dataValues.username,
-                                         html: 'Hello<strong> ' + user.username + '</strong>,<br><br>Thank you for registering at localhost.com. Please click on the link below to complete your activation:<br><br><a href="http://localhost:4200/activate/' + user.dataValues.temporarytoken + '">http://localhost:4200/activate/</a>'
-                                     };
+                                    //  // Create e-mail object to send to user
+                                    //  var email = {
+                                    //      from: 'leprechaunfyp@gmail.com',
+                                    //      to: user.dataValues.email,
+                                    //      subject: 'Localhost Username Request',
+                                    //     //text: 'Hello, You recently requested your username. Please save it: ' + user.dataValues.username,
+                                    //      html: 'Hello<strong> ' + user.username + '</strong>,<br><br>Thank you for registering at localhost.com. Please click on the link below to complete your activation:<br><br><a href="http://localhost:4200/activate/' + user.dataValues.temporarytoken + '">http://localhost:4200/activate/</a>'
+                                    //  };
 
-                                     // Function to send email to user
-                                    transporter.sendMail(email, function(err, info) {
-                                        if (err) { 
-                                        console.log('Could not sent email to user: ' + err)    // If error in sending e-mail, log to console/terminal
-                                    } else {
-                                        console.log('success' + info);
-                                        res.json({ success: true, message: 'Account registered! Please check your e-mail for activation link.' });
-                                      }
-                                    });
+                                    //  // Function to send email to user
+                                    // transporter.sendMail(email, function(err, info) {
+                                    //     if (err) { 
+                                    //     console.log('Could not sent email to user: ' + err)    // If error in sending e-mail, log to console/terminal
+                                    // } else {
+                                    //     console.log('success' + info);
+                                    //     res.json({ success: true, message: 'Account registered! Please check your e-mail for activation link.' });
+                                    //   }
+                                    // });
+
+                                    //console.log('here 1');
+                                    var email = user.dataValues.email;
+                                    var username = user.dataValues.username;
+                                    var temporarytoken = user.dataValues.temporarytoken;
+                                    var linkName = 'activate';
+
+                                    // send email to user for activation link
+                                    //sendEmail(email, username, temporarytoken, linkName);
                                     
+                                    console.log('here 2');
                                     res.json({ success: true, message: 'Account registered! Please check your e-mail for activation link.' });
                                     }).catch((err) => {
                                         if(err) {
@@ -119,6 +183,11 @@ module.exports = (router) => {
             if(!user) {
                 res.json({ success: false, message: 'No user found for activation' });  // Token may be valid but does not match any user in the database
             } else {
+                var email = user.dataValues.email;
+                var username = user.dataValues.username;
+                var temporarytoken = user.dataValues.temporarytoken;
+                var linkName = 'activateUser';
+
                 var token = req.params.token;   // Save the token from URL for verification
                 // Function to verify the user's token
                 jwt.verify(token, secret, (err, decoded) => {
@@ -130,6 +199,8 @@ module.exports = (router) => {
                         // save user in database
                         user.save({ fields: ['temporarytoken', 'active']}).then(() => {
                             res.json({ success: true, message: 'Account activated!' });
+                            // send email to user for successful activation
+                            //sendEmail(email, username, temporarytoken, linkName);
                         }).catch((err) => {
                             res.json({ success: false, message: 'Unable to activate user in database.' });
                         })
@@ -158,6 +229,11 @@ module.exports = (router) => {
                     if(!user) {
                         res.json({ success: false, message: 'User not found.' });
                     } else {
+                        var email = user.dataValues.email;
+                        var username = user.dataValues.username;
+                        var temporarytoken = user.dataValues.temporarytoken;
+                        var linkName = 'resend';
+
                         var validPassword = User.comparePassword(req.body.password, user.dataValues.password);
                         if(!validPassword) {
                             res.json({ success: false, message: 'Incorrect password' });
@@ -169,7 +245,9 @@ module.exports = (router) => {
                                 user.temporarytoken = token;
                                 console.log(token);
                                 user.save({ fields: ['temporarytoken']}).then(() => {
-                                    res.json({ success: true, message: 'Resend the activation link to your email.'+ user.dataValues.email });
+                                    res.json({ success: true, message: 'Resend the activation link to your email: '+ user.dataValues.email });
+                                    // send email to user for  re-activation link
+                                    //sendEmail(email, username, temporarytoken, linkName);
                                 }).catch((err) => {
                                     res.json({ success: false, message: true });
                                 })
@@ -283,6 +361,11 @@ router.get('/checkUsername/:username', (req, res) => {
             if(!user) {
                 res.json({ success: false, message: 'Email not found' });
             } else {
+                var email = user.dataValues.email;
+                var username = user.dataValues.username;
+                var temporarytoken = user.dataValues.temporarytoken;
+                var linkName = 'resendUsername';
+
                 // If e-mail found in database, create e-mail object
                 // var email = {
                 //     from: 'leprechaunfyp@gmail.com',
@@ -306,7 +389,11 @@ router.get('/checkUsername/:username', (req, res) => {
                 //     }
                 // });
 
+                
+
                 res.json({ success: true, message: 'Username has been sent to e-mail! ', username: user.dataValues.username });
+                // send email to user for successful activation
+                //sendEmail(email, username, temporarytoken, linkName);
             }
         }).catch((err) => {
             res.json({ success: false, message: err });
@@ -333,9 +420,17 @@ router.get('/checkUsername/:username', (req, res) => {
                 } else {
                     var token = jwt.sign({ username: req.body.username, email: req.body.email }, secret, { expiresIn: '24h' });
                     user.resettoken = token;
+
+                    var email = user.dataValues.email;
+                    var username = user.dataValues.username;
+                    var temporarytoken = token;
+                    var linkName = 'resetPassword';
+
                     console.log('\nToken: ' + token + '\n');
                     user.save({ fields: ['resettoken'] }).then(() => {
                         res.json({ success: true, message: 'Please check your e-mail for password reset link' });
+                        // send email to user for  re-activation link
+                        //sendEmail(email, username, temporarytoken, linkName);
                     }).catch((err) => {
                         res.json({ success: false, message: err });
                     });
@@ -364,7 +459,7 @@ router.get('/checkUsername/:username', (req, res) => {
                     if(err) {
                         res.json({ success: false, message: 'Password link has expired' });
                     } else {
-                        res.json({ success: true, user: user });
+                        res.json({ success: true, user: user, message: 'You can change password' });
                     }
                 });
             }
@@ -390,6 +485,11 @@ router.get('/checkUsername/:username', (req, res) => {
                     if(!user) {
                         res.json({ success: false, message: 'User not found' });
                     } else {
+                        var email = user.dataValues.email;
+                        var username = user.dataValues.username;
+                        var temporarytoken = user.dataValues.temporarytoken;
+                        var linkName = 'savepassword';
+
                         // check password validity
                         var passwordValidityMsg = validator.checkPasswordFormat(req.body.password);
                         if(passwordValidityMsg) {
@@ -401,6 +501,8 @@ router.get('/checkUsername/:username', (req, res) => {
                                 // update password in database
                                 user.save({ fields: ['password'] }).then(() => {
                                     res.json({ success: true, message: 'Password changed successfully.' });
+                                    // send email to user for  re-activation link
+                                    //sendEmail(email, username, temporarytoken, linkName);
                                 }).catch((err) => {
                                     console.log('here 2');
                                     res.json({ success: false, message: 'Failed: ' + err });
