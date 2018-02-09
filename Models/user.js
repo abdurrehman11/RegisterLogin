@@ -9,7 +9,8 @@ module.exports = function(sequelize, Sequelize) {
     password: { type: Sequelize.STRING, notNull: true },
     active: { type: Sequelize.BOOLEAN, allowNull: false, defaultValue: false },
     temporarytoken: { type: Sequelize.STRING },
-    resettoken: { type: Sequelize.STRING }
+    resettoken: { type: Sequelize.STRING },
+    block: { type: Sequelize.BOOLEAN, allowNull: false, defaultValue: false }
   });
 
   // can not have multiple module.exports{} in one file

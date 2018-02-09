@@ -6,7 +6,8 @@ const jwt = require('jsonwebtoken');
 const secret = require('crypto').randomBytes(256).toString('hex');
 var nodemailer = require('nodemailer');
 var sgTransport = require('nodemailer-sendgrid-transport');
-
+const express = require('express');
+const router = express.Router();
 
 var transporter = nodemailer.createTransport({
         service: 'gmail',
@@ -61,7 +62,7 @@ function sendEmail(email, username, temporarytoken, linkName) {
     });
 }
 
-module.exports = (router) => {
+module.exports.construct = () => {
 
     // Start Sendgrid Configuration Settings	
 	// var options = {
@@ -524,7 +525,11 @@ router.get('/checkUsername/:username', (req, res) => {
     // =========  Middleware to grab the headers  =================
     // any request with attached header coming from Angular2 meet this middleware
     // any routes come after this middleware will run this middleware
-    router.use((req, res, next) => {
+    // router.use((req, res, next) => {
+        
+    // });
+
+    var isloggedIn = (req,res,next) => {
         const token = req.headers['authorization'];
         if(!token) {
             res.json({ success: false, message: 'No token was provided' });
@@ -540,13 +545,13 @@ router.get('/checkUsername/:username', (req, res) => {
                 }
             });
         }
-    });
+    }
 
     /* ==============
      Profile Route
   ============== */
 
-  router.get('/profile', (req, res) => {
+  router.get('/profile',isloggedIn, (req, res) => {
       User.findOne({ attributes: ['username', 'email'], where: { id: req.decoded.userId }
     }).then(user => {
         if(!user) {
@@ -560,6 +565,7 @@ router.get('/checkUsername/:username', (req, res) => {
     });
   });
             
-    return router;
+    
         
 }
+module.exports.router=router;

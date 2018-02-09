@@ -4,7 +4,12 @@ const router = express.Router();
 const Sequelize = require('sequelize');
 const config = require('./config/database');
 const path = require('path');
-const authentication = require('./routes/authentication')(router);
+
+const admin = require('./routes/adminpanel');
+const authentication = require('./routes/authentication');
+
+
+
 const bodyParser = require('body-parser');
 const cors = require('cors');
 
@@ -23,7 +28,7 @@ sequelize
   })
   .catch(err => {
     console.error('Unable to connect to the database:', err);
-  });*/
+  });*/ 
 
 // Models
 const models = require("./Models");
@@ -47,8 +52,11 @@ app.use(cors({
 app.use(bodyParser.urlencoded({ extended: false }))   // parse application/x-www-form-urlencoded
 app.use(bodyParser.json())    // parse application/json
 //app.use(express.static(__dirname + '/client/dist/')); // Provide static directory for front-end
-app.use('/authentication', authentication);
+authentication.construct();
+admin.construct();
 
+app.use('/authentication', authentication.router);
+app.use('/admin', admin.router);
 
 // Connect Server to Angular2 index.html
 app.get('*', (req, res) => {
