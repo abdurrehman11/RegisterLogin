@@ -129,26 +129,6 @@ module.exports.construct = () => {
 
                                  // save user in database
                                  user.save().then((user) => {
-
-                                    //  // Create e-mail object to send to user
-                                    //  var email = {
-                                    //      from: 'leprechaunfyp@gmail.com',
-                                    //      to: user.dataValues.email,
-                                    //      subject: 'Localhost Username Request',
-                                    //     //text: 'Hello, You recently requested your username. Please save it: ' + user.dataValues.username,
-                                    //      html: 'Hello<strong> ' + user.username + '</strong>,<br><br>Thank you for registering at localhost.com. Please click on the link below to complete your activation:<br><br><a href="http://localhost:4200/activate/' + user.dataValues.temporarytoken + '">http://localhost:4200/activate/</a>'
-                                    //  };
-
-                                    //  // Function to send email to user
-                                    // transporter.sendMail(email, function(err, info) {
-                                    //     if (err) { 
-                                    //     console.log('Could not sent email to user: ' + err)    // If error in sending e-mail, log to console/terminal
-                                    // } else {
-                                    //     console.log('success' + info);
-                                    //     res.json({ success: true, message: 'Account registered! Please check your e-mail for activation link.' });
-                                    //   }
-                                    // });
-
                                     //console.log('here 1');
                                     var email = user.dataValues.email;
                                     var username = user.dataValues.username;
@@ -365,11 +345,11 @@ router.get('/checkUsername/:username', (req, res) => {
      Route to send user's username to e-mail
   ======================================= */
 
-  router.get('/resetUsername/:email', (req, res) => {
-      if(!req.params.email) {
+  router.post('/resetUsername', (req, res) => {
+      if(!req.body.email) {
             res.json({ success: false, message: 'Email was not provided' });
         } else {
-            User.findOne({ where: { email: req.params.email }
+            User.findOne({ where: { email: req.body.email }
         }).then(user => {
             if(!user) {
                 res.json({ success: false, message: 'Email not found' });
@@ -379,34 +359,9 @@ router.get('/checkUsername/:username', (req, res) => {
                 var temporarytoken = user.dataValues.temporarytoken;
                 var linkName = 'resendUsername';
 
-                // If e-mail found in database, create e-mail object
-                // var email = {
-                //     from: 'leprechaunfyp@gmail.com',
-                //     to: user.dataValues.email,
-                //     subject: 'Localhost Username Request',
-                //     //text: 'Hello, You recently requested your username. Please save it: ' + user.dataValues.username,
-                //     html: 'Hello, <br><br> You recently requested your username. Please save it: ' + user.dataValues.username
-                // };
-
-                console.log(user.dataValues.email);
-                console.log('before mail');
-                // Function to send email to user
-                // transporter.sendMail(email, function(err, info) {
-                //     if (err) { 
-                //         console.log('here error: ' + err)    // If error in sending e-mail, log to console/terminal
-                //         //res.json({ success: false, message: err });
-                //         //res.send('error here');
-                //     } else {
-                //         console.log('success' + info);
-                //         res.json({ success: true, message: 'Username has been sent to e-mail! ' });
-                //     }
-                // });
-
-                
-
                 res.json({ success: true, message: 'Username has been sent to e-mail! ', username: user.dataValues.username });
                 // send email to user for successful activation
-                //sendEmail(email, username, temporarytoken, linkName);
+                sendEmail(email, username, temporarytoken, linkName);
             }
         }).catch((err) => {
             res.json({ success: false, message: err });
