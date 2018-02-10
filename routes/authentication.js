@@ -30,7 +30,7 @@ function sendEmail(email, username, temporarytoken, linkName) {
     } else if(linkName === 'activateUser') {
         emailText = 'Hello<strong> ' + username + '</strong>,<br><br>Your account has been successfully activated!';
     } else if(linkName === 'resend') {
-        emailText = 'Hello<strong> ' + username + '</strong>,<br><br>You recently requested a new account activation link. Please click on the link below to complete your activation:<br><br><a href="http://localhost:4200/' + linkName + '/'+ temporarytoken + '">http://localhost:4200/activate/</a>';
+        emailText = 'Hello<strong> ' + username + '</strong>,<br><br>You recently requested a new account activation link. Please click on the link below to complete your activation:<br><br><a href="http://localhost:4200/activate/' + temporarytoken + '">http://localhost:4200/activate/</a>';
     } else if(linkName === 'resendUsername') {
         emailText = 'Hello ,<br><br>You recently requested your username. Your username: ' + username;
     } else if(linkName === 'resetPassword') {
@@ -156,7 +156,7 @@ module.exports.construct = () => {
                                     var linkName = 'activate';
 
                                     // send email to user for activation link
-                                    //sendEmail(email, username, temporarytoken, linkName);
+                                    sendEmail(email, username, temporarytoken, linkName);
                                     
                                     console.log('here 2');
                                     res.json({ success: true, message: 'Account registered! Please check your e-mail for activation link.' });
@@ -184,29 +184,33 @@ module.exports.construct = () => {
             if(!user) {
                 res.json({ success: false, message: 'No user found for activation' });  // Token may be valid but does not match any user in the database
             } else {
-                var email = user.dataValues.email;
-                var username = user.dataValues.username;
-                var temporarytoken = user.dataValues.temporarytoken;
-                var linkName = 'activateUser';
+                if(user.dataValues.block) {
+                    res.json({ success: false, message: 'Can not activate account. You have been blocked by the admin' });
+                } else {
+                     var email = user.dataValues.email;
+                    var username = user.dataValues.username;
+                    var temporarytoken = user.dataValues.temporarytoken;
+                    var linkName = 'activateUser';
 
-                var token = req.params.token;   // Save the token from URL for verification
-                // Function to verify the user's token
-                jwt.verify(token, secret, (err, decoded) => {
-                    if(err) {
-                        res.json({ success: false, message: 'Activation link has expired.' }); // Token is expired
-                    } else {
-                        user.temporarytoken = false; // Remove temporary token once activated
-                        user.active = true;      // Change account status to Activated
-                        // save user in database
-                        user.save({ fields: ['temporarytoken', 'active']}).then(() => {
-                            res.json({ success: true, message: 'Account activated!' });
-                            // send email to user for successful activation
-                            //sendEmail(email, username, temporarytoken, linkName);
-                        }).catch((err) => {
-                            res.json({ success: false, message: 'Unable to activate user in database.' });
-                        })
-                    }
-                });
+                    var token = req.params.token;   // Save the token from URL for verification
+                    // Function to verify the user's token
+                    jwt.verify(token, secret, (err, decoded) => {
+                        if(err) {
+                            res.json({ success: false, message: 'Activation link has expired.' }); // Token is expired
+                        } else {
+                            user.temporarytoken = false; // Remove temporary token once activated
+                            user.active = true;      // Change account status to Activated
+                            // save user in database
+                            user.save({ fields: ['temporarytoken', 'active']}).then(() => {
+                                res.json({ success: true, message: 'Account activated!' });
+                                // send email to user for successful activation
+                                sendEmail(email, username, temporarytoken, linkName);
+                            }).catch((err) => {
+                                res.json({ success: false, message: 'Unable to activate user in database.' });
+                            })
+                        }
+                    });
+                }
             }
         }).catch((err) => {
             res.json({ success: false, message: err });
@@ -239,21 +243,24 @@ module.exports.construct = () => {
                         if(!validPassword) {
                             res.json({ success: false, message: 'Incorrect password' });
                         } else {
-                            if(user.dataValues.active) {
-                                res.json({ success: false, message: 'Account is already activated.' });
-                            } else { 
-                                var token = jwt.sign({ username: req.body.username, email: req.body.email }, secret, { expiresIn: '24h' });
-                                user.temporarytoken = token;
-                                console.log(token);
-                                user.save({ fields: ['temporarytoken']}).then(() => {
-                                    res.json({ success: true, message: 'Resend the activation link to your email: '+ user.dataValues.email });
-                                    // send email to user for  re-activation link
-                                    //sendEmail(email, username, temporarytoken, linkName);
-                                }).catch((err) => {
-                                    res.json({ success: false, message: true });
-                                })
-                                
-                            }
+                            if(user.dataValues.block) {
+                                res.json({ success: false, message: 'Can not resend activation link. You have been blocked by the admin' });
+                            } else {
+                                if(user.dataValues.active) {
+                                    res.json({ success: false, message: 'Account is already activated.' });
+                                } else {
+                                    var token = jwt.sign({ username: req.body.username, email: req.body.email }, secret, { expiresIn: '24h' });
+                                    user.temporarytoken = token;
+                                    console.log(token);
+                                    user.save({ fields: ['temporarytoken']}).then(() => {
+                                        res.json({ success: true, message: 'Resend the activation link to your email: '+ user.dataValues.email });
+                                        // send email to user for  re-activation link
+                                        sendEmail(email, username, token, linkName);
+                                    }).catch((err) => {
+                                        res.json({ success: false, message: true });
+                                    })
+                                    }
+                                }
                         }
                     }
                 })
@@ -328,15 +335,20 @@ router.get('/checkUsername/:username', (req, res) => {
                         if(!user.dataValues.active) {
                             res.json({ success: false, message: 'Account is not yet activated. Please check your e-mail for activation link.', expired: true });
                         } else {
-                            // create token for user login  
-                            const token = jwt.sign({ userId: user.dataValues.id }, secret, { expiresIn: '24h' });
-                            res.json({ 
-                                success: true,
-                                message: 'Successful login!',
-                                token: token,
-                                user: { username: user.dataValues.username,
-                                        email: user.dataValues.email }
-                            });
+                            if(user.dataValues.block) {
+                                res.json({ success: false, message: 'Can not login. You have been blocked by admin' });
+                            } else {
+                                 // create token for user login  
+                                const token = jwt.sign({ userId: user.dataValues.id }, secret, { expiresIn: '24h' });
+                                res.json({ 
+                                    success: true,
+                                    message: 'Successful login!',
+                                    token: token,
+                                    user: { username: user.dataValues.username,
+                                            email: user.dataValues.email }
+                                });
+                            }
+                           
                         }
                         
                     }
@@ -565,7 +577,6 @@ router.get('/checkUsername/:username', (req, res) => {
     });
   });
             
-    
         
 }
-module.exports.router=router;
+module.exports.router = router;
