@@ -3,6 +3,8 @@ const express = require('express');
 const router = express.Router();
 const Admin = models.admin;   // accessing admin model definition file
 const User = models.user;   // accessing user model definition file
+const secret = require('crypto').randomBytes(256).toString('hex');
+const jwt = require('jsonwebtoken');
 
 
 module.exports.construct = () => {
@@ -20,14 +22,24 @@ module.exports.construct = () => {
                 res.json({ success: false, message: 'No password was provided' });
             } else {
                 Admin.findOne({ where: {username: req.body.username.toLowerCase() }
-            }).then(user => {
-                if(!user) {
+            }).then(admin => {
+                if(!admin) {
                     res.json({ success: false, message: 'Username not found' });
                 } else {
-                    if(req.body.password !== user.dataValues.password) {
+                    console.log(admin);
+                    if(req.body.password !== admin.dataValues.password) {
                         res.json({ success: false, message: 'Incorrect password' });
                     } else {
-                        res.json({ success: true, message: 'Successful login!' });
+                        // create token for admin login  
+                        const token = jwt.sign({ adminId: admin.dataValues.id }, secret, { expiresIn: '24h' });
+                        res.json({ 
+                            success: true,
+                            message: 'Successful login!',
+                            token: token,
+                            user: { username: admin.dataValues.username,
+                                    email: admin.dataValues.email }
+                            });
+                        //res.json({ success: true, message: 'Successful login!' });
                     }
                 }
             }).catch((err) => {
@@ -44,7 +56,7 @@ module.exports.construct = () => {
 
     router.get('/allUsers', (req, res) => {
         User.findAll({
-            attributes: ['id', 'email', 'username']
+            attributes: ['id', 'email', 'username', 'block']
         }).then(users => {
             if(!users) {
                 //console.log(user.dataValues.email);
@@ -119,6 +131,33 @@ module.exports.construct = () => {
             }).catch((err) => {
                 res.json({ success: false, message: err });
             });
+        }
+    });
+
+
+    /* =========================
+        Route to delete a user
+    ======================= */
+
+    router.delete('/deleteuser/:id', (req, res) => {
+        if(!req.params.id) {
+            res.json({ success: false, message: 'No id provided' });
+        } else {
+            User.findOne({
+                where: { id: req.params.id }
+            }).then(user => {
+                if(!user) {
+                    res.json({ success: false, message: 'User not found' });
+                } else {
+                    user.destroy().then(() => {
+                         res.json({ success: true, message: 'User deleted!' });
+                    }).catch((err) => {
+                         res.json({ success: false, message: 'User not deleted' });
+                    });
+                }
+            }).catch((err) => {
+                res.json({ success: false, message: err });
+            })
         }
     });
 
